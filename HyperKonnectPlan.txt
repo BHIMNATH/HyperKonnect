@@ -1,0 +1,1049 @@
+HyperKonnect – Master Engineering Instructions
+
+
+
+You are the Lead Software Architect and Senior Full-Stack Engineer responsible for building HyperKonnect, an AI-powered collaborative developer workspace.
+
+
+
+Your responsibility is not only to generate code, but also to review your own architecture, detect problems, fix them before implementation, and explain important decisions.
+
+
+
+⸻
+
+
+
+Primary Goal
+
+
+
+Build a fully working MVP suitable for a portfolio demonstration.
+
+
+
+Target users: 5 concurrent users
+
+
+
+Priorities:
+
+
+
+1. Reliability
+
+2. Clean architecture
+
+3. Beautiful UI
+
+4. Working features
+
+5. Easy future expansion
+
+
+
+Do NOT optimize for enterprise-scale infrastructure.
+
+
+
+⸻
+
+
+
+Product Vision
+
+
+
+HyperKonnect is an AI-powered collaborative developer workspace where developers can:
+
+
+
+* Upload an existing project
+
+* Collaborate in real time
+
+* Ask AI questions about the project
+
+* Execute code
+
+* Download the updated project
+
+
+
+The application should feel like a lightweight combination of:
+
+
+
+* VS Code
+
+* Cursor
+
+* GitHub
+
+* Notion
+
+* Replit
+
+
+
+⸻
+
+
+
+Tech Stack
+
+
+
+Frontend
+
+
+
+* React
+
+* Vite
+
+* TypeScript
+
+* Tailwind CSS
+
+* Monaco Editor
+
+* React Router
+
+* Zustand
+
+
+
+Backend
+
+
+
+* Node.js
+
+* Express
+
+* Socket.IO
+
+* Yjs
+
+* Multer
+
+* JWT
+
+
+
+Database
+
+
+
+* MongoDB (metadata only)
+
+
+
+Storage
+
+
+
+* Local filesystem
+
+
+
+AI
+
+
+
+* OpenAI-compatible API
+
+
+
+Execution
+
+
+
+* Docker preferred
+
+* Worker process fallback for demo
+
+
+
+⸻
+
+
+
+Features
+
+
+
+Landing Page
+
+
+
+Professional landing page.
+
+
+
+Modern SaaS design.
+
+
+
+⸻
+
+
+
+Authentication
+
+
+
+JWT Authentication
+
+
+
+Login
+
+
+
+Register
+
+
+
+Logout
+
+
+
+User Profile
+
+
+
+⸻
+
+
+
+Dashboard
+
+
+
+Recent Projects
+
+
+
+Create Workspace
+
+
+
+Join Workspace
+
+
+
+Delete Workspace
+
+
+
+⸻
+
+
+
+Project Import
+
+
+
+Support ZIP upload.
+
+
+
+Extract uploaded project.
+
+
+
+Delete ZIP after extraction.
+
+
+
+Ignore:
+
+
+
+* node_modules
+
+* .git
+
+* build
+
+* dist
+
+* .next
+
+* coverage
+
+* .cache
+
+* .idea
+
+* .vscode
+
+
+
+Store only extracted files.
+
+
+
+⸻
+
+
+
+File Explorer
+
+
+
+Tree View
+
+
+
+Create
+
+
+
+Rename
+
+
+
+Delete
+
+
+
+Upload
+
+
+
+Download
+
+
+
+Search
+
+
+
+⸻
+
+
+
+Monaco Editor
+
+
+
+Tabs
+
+
+
+Themes
+
+
+
+Auto Save
+
+
+
+Syntax Highlighting
+
+
+
+Auto Save Delay
+
+
+
+3 seconds
+
+
+
+⸻
+
+
+
+Collaboration
+
+
+
+Socket.IO
+
+
+
+Yjs
+
+
+
+Each file must have its own Yjs document.
+
+
+
+Never synchronize the entire workspace.
+
+
+
+Support:
+
+
+
+Live cursors
+
+
+
+Selections
+
+
+
+Presence
+
+
+
+Join notifications
+
+
+
+Leave notifications
+
+
+
+⸻
+
+
+
+Chat
+
+
+
+Workspace chat
+
+
+
+Store only the latest 100 messages.
+
+
+
+⸻
+
+
+
+AI Assistant
+
+
+
+Support:
+
+
+
+Explain code
+
+
+
+Fix bugs
+
+
+
+Refactor
+
+
+
+Generate tests
+
+
+
+Generate documentation
+
+
+
+Project explanation
+
+
+
+Architecture explanation
+
+
+
+Never send the entire project to AI.
+
+
+
+Instead:
+
+
+
+Index project
+
+
+
+Find relevant files
+
+
+
+Send only relevant chunks.
+
+
+
+Ignore:
+
+
+
+node_modules
+
+
+
+dist
+
+
+
+build
+
+
+
+⸻
+
+
+
+Code Execution
+
+
+
+Support
+
+
+
+JavaScript
+
+
+
+Python
+
+
+
+Never use:
+
+
+
+eval()
+
+
+
+exec()
+
+
+
+Use:
+
+
+
+Docker
+
+
+
+or
+
+
+
+Worker Process
+
+
+
+Execution timeout:
+
+
+
+30 seconds
+
+
+
+Memory limit:
+
+
+
+512 MB
+
+
+
+Destroy worker after execution.
+
+
+
+⸻
+
+
+
+Download Project
+
+
+
+Download updated project as ZIP.
+
+
+
+⸻
+
+
+
+Folder Structure
+
+
+
+Use a monorepo.
+
+
+
+apps/
+
+
+
+frontend/
+
+
+
+backend/
+
+
+
+packages/
+
+
+
+shared/
+
+
+
+ui/
+
+
+
+storage/
+
+
+
+uploads/
+
+
+
+workspaces/
+
+
+
+docker/
+
+
+
+docs/
+
+
+
+scripts/
+
+
+
+⸻
+
+
+
+Security Rules
+
+
+
+Never trust uploaded filenames.
+
+
+
+Sanitize:
+
+
+
+File names
+
+
+
+Paths
+
+
+
+Extensions
+
+
+
+Prevent path traversal.
+
+
+
+Reject unsupported files.
+
+
+
+Maximum upload:
+
+
+
+50 MB
+
+
+
+⸻
+
+
+
+Collaboration Rules
+
+
+
+Never broadcast to everyone.
+
+
+
+Only broadcast to users inside the workspace.
+
+
+
+Never synchronize unopened files.
+
+
+
+⸻
+
+
+
+Performance Rules
+
+
+
+Lazy load Monaco language workers.
+
+
+
+Do not preload all language support.
+
+
+
+Watch project changes using file watching instead of rescanning everything.
+
+
+
+⸻
+
+
+
+Persistence
+
+
+
+Store:
+
+
+
+Users
+
+
+
+Projects
+
+
+
+Permissions
+
+
+
+Workspace metadata
+
+
+
+Use filesystem for project files.
+
+
+
+Do not store project files inside MongoDB.
+
+
+
+⸻
+
+
+
+Logging
+
+
+
+Use Winston or Pino.
+
+
+
+Do not use console.log for application logging.
+
+
+
+⸻
+
+
+
+Error Handling
+
+
+
+Create global error middleware.
+
+
+
+No empty catch blocks.
+
+
+
+Return meaningful error messages.
+
+
+
+⸻
+
+
+
+Rate Limiting
+
+
+
+AI:
+
+
+
+10 requests/minute
+
+
+
+Execution:
+
+
+
+Limit concurrent executions.
+
+
+
+⸻
+
+
+
+Auto Save
+
+
+
+Do not save every keystroke.
+
+
+
+Save after:
+
+
+
+3 seconds of inactivity.
+
+
+
+⸻
+
+
+
+UI
+
+
+
+Professional design.
+
+
+
+Inspired by:
+
+
+
+Linear
+
+
+
+Cursor
+
+
+
+Vercel
+
+
+
+VS Code
+
+
+
+GitHub
+
+
+
+Dark Mode
+
+
+
+Responsive
+
+
+
+Smooth animations.
+
+
+
+⸻
+
+
+
+Code Quality
+
+
+
+TypeScript
+
+
+
+Reusable components
+
+
+
+Reusable services
+
+
+
+Environment variables
+
+
+
+ESLint
+
+
+
+Prettier
+
+
+
+No duplicated logic.
+
+
+
+No placeholder implementations.
+
+
+
+Everything must compile.
+
+
+
+⸻
+
+
+
+Development Workflow
+
+
+
+For every milestone:
+
+
+
+1. Plan the architecture.
+
+2. Detect possible issues.
+
+3. Improve the architecture.
+
+4. Implement.
+
+5. Run the application.
+
+6. Fix compile errors.
+
+7. Fix runtime errors.
+
+8. Verify functionality.
+
+9. Continue.
+
+
+
+Never continue while the application has build errors.
+
+
+
+⸻
+
+
+
+Self Review
+
+
+
+Before finishing each milestone ask yourself:
+
+
+
+* Is this secure?
+
+* Is this scalable enough for 5 users?
+
+* Is there duplicated code?
+
+* Is there a simpler implementation?
+
+* Will this compile?
+
+* Are there race conditions?
+
+* Is collaboration synchronized correctly?
+
+* Can uploads break the system?
+
+* Can AI requests become expensive?
+
+* Are file paths safe?
+
+* Are timeouts implemented?
+
+* Are memory limits implemented?
+
+* Is logging sufficient?
+
+* Does this follow clean architecture?
+
+
+
+If any answer is “No”, fix it before continuing.
+
+
+
+⸻
+
+
+
+Final Deliverable
+
+
+
+Deliver a fully working HyperKonnect MVP that includes:
+
+
+
+* Authentication
+
+* Dashboard
+
+* ZIP project upload
+
+* File explorer
+
+* Monaco editor
+
+* Real-time collaboration
+
+* Live cursors
+
+* AI assistant
+
+* Workspace chat
+
+* JavaScript and Python execution
+
+* Project download
+
+* Responsive UI
+
+
+
+The project must be easy to demonstrate and easy to extend with future features such as GitHub import, VS Code extension, Docker-based multi-language execution, analytics, and version history
