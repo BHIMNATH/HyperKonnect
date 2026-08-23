@@ -17,6 +17,8 @@ interface WorkspaceEditorProps {
   workspaceId: string;
 }
 
+const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5001' : '';
+
 export function WorkspaceEditor({ workspaceId }: WorkspaceEditorProps) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [activeFile, setActiveFile] = useState<string>('index.ts');
@@ -48,7 +50,7 @@ export function WorkspaceEditor({ workspaceId }: WorkspaceEditorProps) {
   useEffect(() => {
     const fetchFileTree = async () => {
       try {
-        const res = await fetch(`http://localhost:5001/api/workspaces/${workspaceId}/files`);
+        const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/files`);
         if (res.ok) {
           const data = await res.json();
           setFiles(data);
@@ -66,7 +68,7 @@ export function WorkspaceEditor({ workspaceId }: WorkspaceEditorProps) {
 
     const fetchFileContent = async () => {
       try {
-        const res = await fetch(`http://localhost:5001/api/workspaces/${workspaceId}/file?path=${encodeURIComponent(activeFile)}`);
+        const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/file?path=${encodeURIComponent(activeFile)}`);
         if (res.ok) {
           const data = await res.json();
           setFileContent(data.content || '');
@@ -83,7 +85,7 @@ export function WorkspaceEditor({ workspaceId }: WorkspaceEditorProps) {
     if (!activeFile) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/workspaces/${workspaceId}/file`, {
+      const res = await fetch(`${API_BASE}/api/workspaces/${workspaceId}/file`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: activeFile, content: contentToSave }),
@@ -105,7 +107,7 @@ export function WorkspaceEditor({ workspaceId }: WorkspaceEditorProps) {
     setShowConsole(true);
     try {
       const lang = activeFile.endsWith('.py') ? 'python' : 'javascript';
-      const res = await fetch('http://localhost:5001/api/execute', {
+      const res = await fetch(`${API_BASE}/api/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ language: lang, code: fileContent }),
@@ -131,7 +133,7 @@ export function WorkspaceEditor({ workspaceId }: WorkspaceEditorProps) {
     setAiPrompt('');
 
     try {
-      const res = await fetch('http://localhost:5001/api/ai/chat', {
+      const res = await fetch(`${API_BASE}/api/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

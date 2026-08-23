@@ -7,15 +7,16 @@ import multer from 'multer';
 import AdmZip from 'adm-zip';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { exec } from 'child_process';
 import logger from './config/logger.js';
 import { connectDB } from './config/db.js';
 
 dotenv.config();
 
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
+export const app = express();
+export const httpServer = createServer(app);
+export const io = new Server(httpServer, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST'],
@@ -25,11 +26,24 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Base storage setup
-const STORAGE_DIR = path.join(process.cwd(), 'storage', 'workspaces');
-const UPLOADS_DIR = path.join(process.cwd(), 'storage', 'uploads');
-if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
-if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+// Safe base storage setup (supports Vercel serverless read-only filesystem via os.tmpdir)
+function getStorageDir(subDir: string): string {
+  const isVercel = Boolean(process.env.VERCEL);
+  const base = isVercel ? os.tmpdir() : process.cwd();
+  const dir = path.join(base, 'storage', subDir);
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch (err) {
+    // Fallback to os.tmpdir if process.cwd is read-only
+    const tmpDir = path.join(os.tmpdir(), 'storage', subDir);
+    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+    return tmpDir;
+  }
+  return dir;
+}
+
+const STORAGE_DIR = getStorageDir('workspaces');
+const UPLOADS_DIR = getStorageDir('uploads');
 
 const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 50 * 1024 * 1024 } });
 
@@ -63,12 +77,16 @@ const sampleFiles: Record<string, string> = {
 };
 
 function ensureSampleFiles(wsId: string) {
-  const wsDir = path.join(STORAGE_DIR, wsId);
-  if (!fs.existsSync(wsDir)) {
-    fs.mkdirSync(wsDir, { recursive: true });
-    for (const [filename, content] of Object.entries(sampleFiles)) {
-      fs.writeFileSync(path.join(wsDir, filename), content, 'utf-8');
+  try {
+    const wsDir = path.join(STORAGE_DIR, wsId);
+    if (!fs.existsSync(wsDir)) {
+      fs.mkdirSync(wsDir, { recursive: true });
+      for (const [filename, content] of Object.entries(sampleFiles)) {
+        fs.writeFileSync(path.join(wsDir, filename), content, 'utf-8');
+      }
     }
+  } catch (e) {
+    logger.warn('Sample files initialization warning: ' + e);
   }
 }
 ensureSampleFiles('demo-project');
@@ -89,6 +107,14 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date() });
+});
+
+app.get('/api', (req, res) => {
+  res.json({ message: 'HyperKonnect API Server', version: '1.0.0', health: '/api/health' });
+});
+
+app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
 
@@ -131,7 +157,7 @@ app.post('/api/workspaces/upload', upload.single('projectZip'), (req, res) => {
     zip.extractAllTo(wsDir, true);
 
     // Clean up uploaded zip
-    fs.unlinkSync(req.file.path);
+    if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
     // Count extracted files
     const files = fs.readdirSync(wsDir);
@@ -162,6 +188,7 @@ app.get('/api/workspaces/:id/files', (req, res) => {
     }
 
     const readFiles = (dir: string): any[] => {
+      if (!fs.existsSync(dir)) return [];
       const items = fs.readdirSync(dir, { withFileTypes: true });
       return items
         .filter(item => !['node_modules', '.git', 'dist', 'build'].includes(item.name))
@@ -201,7 +228,7 @@ app.get('/api/workspaces/:id/file', (req, res) => {
 
     const safePath = getSafeFilePath(wsId, filePath);
     if (!fs.existsSync(safePath)) {
-      return res.status(404).json({ error: 'File not found' });
+      return res.json({ path: filePath, content: sampleFiles[filePath] || '' });
     }
 
     const content = fs.readFileSync(safePath, 'utf-8');
@@ -327,7 +354,7 @@ io.on('connection', (socket) => {
     }
     workspaceMessages[workspaceId].push(chatMsg);
     if (workspaceMessages[workspaceId].length > 100) {
-      workspaceMessages[workspaceId].shift(); // Keep last 100
+      workspaceMessages[workspaceId].shift();
     }
 
     io.to(`workspace:${workspaceId}`).emit('new-message', chatMsg);
@@ -343,16 +370,20 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start DB and HTTP server
-const PORT = (process.env.PORT && process.env.PORT !== '5000') ? process.env.PORT : 5001;
+// Start HTTP server only if not running on Vercel Serverless
+if (!process.env.VERCEL) {
+  const PORT = (process.env.PORT && process.env.PORT !== '5000') ? process.env.PORT : 5001;
 
-const startServer = async () => {
-  await connectDB();
-  httpServer.listen(PORT, () => {
-    logger.info(`HyperKonnect backend running on port ${PORT}`);
+  const startServer = async () => {
+    await connectDB();
+    httpServer.listen(PORT, () => {
+      logger.info(`HyperKonnect backend running on port ${PORT}`);
+    });
+  };
+
+  startServer().catch((err) => {
+    logger.error('Failed to start server: ' + err);
   });
-};
+}
 
-startServer().catch((err) => {
-  logger.error('Failed to start server: ' + err);
-});
+export default app;

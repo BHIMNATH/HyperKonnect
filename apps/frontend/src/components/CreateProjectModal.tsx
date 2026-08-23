@@ -7,6 +7,8 @@ interface ModalProps {
   onSuccess: (workspaceId: string) => void;
 }
 
+const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5001' : '';
+
 export function CreateProjectModal({ isOpen, onClose, onSuccess }: ModalProps) {
   const [activeTab, setActiveTab] = useState<'create' | 'upload'>('create');
   const [projectName, setProjectName] = useState('');
@@ -27,7 +29,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: ModalProps) {
 
     try {
       if (activeTab === 'create') {
-        const res = await fetch('http://localhost:5001/api/workspaces', {
+        const res = await fetch(`${API_BASE}/api/workspaces`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: projectName, description, language }),
@@ -49,7 +51,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: ModalProps) {
         formData.append('name', projectName);
         formData.append('description', description);
 
-        const res = await fetch('http://localhost:5001/api/workspaces/upload', {
+        const res = await fetch(`${API_BASE}/api/workspaces/upload`, {
           method: 'POST',
           body: formData,
         });

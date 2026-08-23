@@ -107,6 +107,8 @@ function AuthView() {
 }
 
 // Interactive Dashboard Component
+const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5001' : '';
+
 function DashboardView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [workspaces, setWorkspaces] = useState<any[]>([]);
@@ -114,7 +116,7 @@ function DashboardView() {
 
   const fetchWorkspaces = async () => {
     try {
-      const res = await fetch('http://localhost:5001/api/workspaces');
+      const res = await fetch(`${API_BASE}/api/workspaces`);
       if (res.ok) {
         const data = await res.json();
         setWorkspaces(data);
