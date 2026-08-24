@@ -26,7 +26,7 @@ export const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Safe base storage setup (supports Vercel serverless read-only filesystem via os.tmpdir)
+// Safe base storage setup
 function getStorageDir(subDir: string): string {
   const isVercel = Boolean(process.env.VERCEL);
   const base = isVercel ? os.tmpdir() : process.cwd();
@@ -34,7 +34,6 @@ function getStorageDir(subDir: string): string {
   try {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   } catch (err) {
-    // Fallback to os.tmpdir if process.cwd is read-only
     const tmpDir = path.join(os.tmpdir(), 'storage', subDir);
     if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
     return tmpDir;
@@ -46,6 +45,19 @@ const STORAGE_DIR = getStorageDir('workspaces');
 const UPLOADS_DIR = getStorageDir('uploads');
 
 const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 50 * 1024 * 1024 } });
+
+// Static Frontend Serving Setup
+const possibleFrontendDirs = [
+  path.join(process.cwd(), '..', 'frontend', 'dist'),
+  path.join(process.cwd(), 'apps', 'frontend', 'dist'),
+  path.join(process.cwd(), 'dist'),
+];
+
+let frontendDistPath = possibleFrontendDirs.find(d => fs.existsSync(d));
+if (frontendDistPath) {
+  logger.info(`Serving frontend static files from ${frontendDistPath}`);
+  app.use(express.static(frontendDistPath));
+}
 
 // In-memory workspace metadata store
 interface WorkspaceMeta {
@@ -102,10 +114,6 @@ function getSafeFilePath(wsId: string, relPath: string): string {
 }
 
 // REST Endpoints
-app.get('/', (req, res) => {
-  res.json({ message: 'HyperKonnect API Server', version: '1.0.0', health: '/health' });
-});
-
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });
 });
@@ -156,10 +164,8 @@ app.post('/api/workspaces/upload', upload.single('projectZip'), (req, res) => {
     const zip = new AdmZip(req.file.path);
     zip.extractAllTo(wsDir, true);
 
-    // Clean up uploaded zip
     if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
-    // Count extracted files
     const files = fs.readdirSync(wsDir);
 
     workspacesStore[wsId] = {
@@ -255,7 +261,7 @@ app.post('/api/workspaces/:id/file', (req, res) => {
   }
 });
 
-// Code Execution Endpoint (JavaScript & Python)
+// Code Execution Endpoint
 app.post('/api/execute', (req, res) => {
   const { language, code } = req.body;
   if (!code) return res.status(400).json({ error: 'No code provided for execution' });
@@ -278,7 +284,6 @@ app.post('/api/execute', (req, res) => {
 
   const startTime = Date.now();
   exec(cmd, { timeout: 30000, maxBuffer: 1024 * 1024 * 5 }, (error, stdout, stderr) => {
-    // Cleanup temporary file
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     const durationMs = Date.now() - startTime;
@@ -300,7 +305,7 @@ app.post('/api/execute', (req, res) => {
   });
 });
 
-// AI Assistant Chat API Endpoint
+// AI Assistant Chat Endpoint
 app.post('/api/ai/chat', (req, res) => {
   const { prompt, codeContext, filename, action } = req.body;
   
@@ -318,7 +323,19 @@ app.post('/api/ai/chat', (req, res) => {
   res.json({ response: responseText, timestamp: new Date().toISOString() });
 });
 
-// Socket.IO Real-Time Collaboration & Presence
+// Catch-all route serving React Frontend index.html for SPA page routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+    return next();
+  }
+  const targetDist = possibleFrontendDirs.find(d => fs.existsSync(path.join(d, 'index.html')));
+  if (targetDist) {
+    return res.sendFile(path.join(targetDist, 'index.html'));
+  }
+  res.json({ message: 'HyperKonnect API Server', version: '1.0.0', health: '/api/health' });
+});
+
+// Socket.IO Real-Time Collaboration
 const workspaceMessages: Record<string, any[]> = {};
 
 io.on('connection', (socket) => {
@@ -329,11 +346,9 @@ io.on('connection', (socket) => {
     socket.data.workspaceId = workspaceId;
     socket.data.username = username || 'Anonymous Collaborator';
 
-    // Send chat history
     const history = workspaceMessages[workspaceId] || [];
     socket.emit('chat-history', history);
 
-    // Notify room of presence
     io.to(`workspace:${workspaceId}`).emit('user-joined', {
       userId: socket.id,
       username: socket.data.username,
