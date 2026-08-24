@@ -8,11 +8,15 @@ import AdmZip from 'adm-zip';
 import path from 'path';
 import fs from 'fs';
 import os from 'os';
+import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import logger from './config/logger.js';
 import { connectDB } from './config/db.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const app = express();
 export const httpServer = createServer(app);
@@ -46,8 +50,12 @@ const UPLOADS_DIR = getStorageDir('uploads');
 
 const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 50 * 1024 * 1024 } });
 
-// Static Frontend Serving Setup
+// Static Frontend Serving Setup (Robust path resolution for Vercel Serverless)
 const possibleFrontendDirs = [
+  path.join(__dirname, '..', 'public'),
+  path.join(__dirname, 'public'),
+  path.join(__dirname, '..', '..', 'frontend', 'dist'),
+  path.join(__dirname, '..', 'frontend', 'dist'),
   path.join(process.cwd(), 'public'),
   path.join(process.cwd(), 'apps', 'backend', 'public'),
   path.join(process.cwd(), '..', 'frontend', 'dist'),
@@ -55,10 +63,11 @@ const possibleFrontendDirs = [
   path.join(process.cwd(), 'dist'),
 ];
 
-let frontendDistPath = possibleFrontendDirs.find(d => fs.existsSync(d));
-if (frontendDistPath) {
-  logger.info(`Serving frontend static files from ${frontendDistPath}`);
-  app.use(express.static(frontendDistPath));
+for (const dir of possibleFrontendDirs) {
+  if (fs.existsSync(dir)) {
+    logger.info(`Registering static directory: ${dir}`);
+    app.use(express.static(dir));
+  }
 }
 
 // In-memory workspace metadata store
@@ -330,11 +339,27 @@ app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
     return next();
   }
+
   const targetDist = possibleFrontendDirs.find(d => fs.existsSync(path.join(d, 'index.html')));
   if (targetDist) {
     return res.sendFile(path.join(targetDist, 'index.html'));
   }
-  res.json({ message: 'HyperKonnect API Server', version: '1.0.0', health: '/api/health' });
+
+  // Robust HTML Template fallback for Vercel Serverless Function runtime
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HyperKonnect Workspace</title>
+    <script type="module" crossorigin src="/assets/index-S4giQHAz.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-rhO_PYwr.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`);
 });
 
 // Socket.IO Real-Time Collaboration
