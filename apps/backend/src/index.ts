@@ -48,6 +48,8 @@ const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 50 * 1024 * 1024 
 
 // Static Frontend Serving Setup
 const possibleFrontendDirs = [
+  path.join(process.cwd(), 'public'),
+  path.join(process.cwd(), 'apps', 'backend', 'public'),
   path.join(process.cwd(), '..', 'frontend', 'dist'),
   path.join(process.cwd(), 'apps', 'frontend', 'dist'),
   path.join(process.cwd(), 'dist'),
