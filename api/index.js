@@ -1,3 +1,3 @@
-import app from '../apps/backend/dist/index.js';
+import app from '../apps/backend/src/index.js';
 
 export default app;
