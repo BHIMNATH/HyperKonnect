@@ -23,7 +23,7 @@ export const httpServer = createServer(app);
 export const io = new Server(httpServer, {
   cors: {
     origin: '*',
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   },
 });
 
@@ -360,6 +360,21 @@ app.get('*', (req, res, next) => {
     <div id="root"></div>
   </body>
 </html>`);
+});
+
+// Global Error Handler Middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  logger.error('Unhandled Server Error: ' + (err.stack || err.message));
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'Internal Server Error', message: err.message });
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception: ' + (err.stack || err.message));
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  logger.error('Unhandled Rejection: ' + (reason?.stack || reason));
 });
 
 // Socket.IO Real-Time Collaboration
