@@ -10,7 +10,7 @@
     "dev:backend": "npm run dev --workspace=apps/backend",
     "dev:frontend": "npm run dev --workspace=apps/frontend",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build": "npm run build --workspaces"
+    "build": "npm run build --workspaces && node -e \"const fs=require('fs'); fs.mkdirSync('dist', {recursive: true}); fs.cpSync('apps/frontend/dist', 'dist', {recursive: true});\""
   },
   "dependencies": {
     "@types/node": "^20.12.7",

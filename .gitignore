@@ -4,14 +4,15 @@ node_modules/
 # Build outputs
 dist/
 build/
+apps/backend/dist/
+apps/backend/public/
+apps/frontend/dist/
 
 # Runtime storage & uploads
 storage/
 uploads/
 apps/backend/storage/
 apps/backend/uploads/
-apps/backend/dist/
-apps/frontend/dist/
 
 # Logs & temp
 *.log
