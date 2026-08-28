@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "cd ../frontend && npm run build && cd ../backend && node -e \"const fs=require('fs'); fs.mkdirSync('public', {recursive: true}); fs.cpSync('../frontend/dist', 'public', {recursive: true});\" && tsc",
+    "build": "node -e \"const fs=require('fs'); if(fs.existsSync('../frontend/dist')){fs.mkdirSync('public', {recursive: true}); fs.cpSync('../frontend/dist', 'public', {recursive: true});}\" && tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts"
   },
